@@ -12,9 +12,6 @@ export const getUsers = async (_req: Request, res: Response, next: NextFunction)
   try {
     const users = await User.find({});
     console.log(users);
-    if (!users.length) {
-      throw new NotFoundError("Пользователи не найдены");
-    }
     res.status(200).send(users);
   } catch (error) {
     next(error);
@@ -28,9 +25,12 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
     const user = await User.findOne({ _id: Object(userId) }).orFail(
       () => new NotFoundError("Пользователь не найден")
     );
-    res.status(200).send(user);
+    return res.status(200).send(user);
   } catch (error) {
-    next(error);
+    if (error instanceof Error && error.name === "CastError") {
+      return next(new BadRequestError("Невалидный id"));
+    }
+    return next(error);
   }
 };
 
@@ -65,12 +65,17 @@ export const updateUserData = async (
       { _id: Object(_id) },
       { $set: { name, about } },
       {
-        returnDocument: "after"
+        returnDocument: "after",
+        runValidators: true,
+        runSettersOnQuery: true
       }
     ).orFail(() => new NotFoundError("Пользователь не найден"));
-    res.status(200).send(updateUser);
+    return res.status(200).send(updateUser);
   } catch (error) {
-    next(error);
+    if (error instanceof MongooseError.ValidationError) {
+      return next(new BadRequestError(error.message));
+    }
+    return next(error);
   }
 };
 
@@ -86,12 +91,13 @@ export const updateAvatar = async (
     const updateUserAvatar = await User.findOneAndUpdate(
       { _id: Object(_id) },
       { $set: { avatar } },
-      {
-        returnDocument: "after"
-      }
+      { returnDocument: "after", runValidators: true, context: "query" }
     ).orFail(() => new NotFoundError("Пользователь не найден"));
-    res.status(200).send(updateUserAvatar);
+    return res.status(200).send(updateUserAvatar);
   } catch (error) {
-    next(error);
+    if (error instanceof MongooseError.ValidationError) {
+      return next(new BadRequestError(error.message));
+    }
+    return next(error);
   }
 };

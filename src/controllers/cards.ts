@@ -10,9 +10,6 @@ export const getCards = async (_req: Request, res: Response, next: NextFunction)
   console.log("getCards!!!!!");
   try {
     const cards = await Card.find({});
-    if (!cards.length) {
-      throw new NotFoundError("Карты не найдены");
-    }
     res.status(200).send(cards);
   } catch (error) {
     next(error);
@@ -32,10 +29,7 @@ export const createCard = async (
     const newCard = await Card.create({
       name,
       link,
-      // owner: Object(_id),
-      owner: { _id: Object(_id) },
-      likes: [],
-      createdAt: Date.now()
+      owner: { _id: Object(_id) }
     });
     return res.status(constants.HTTP_STATUS_CREATED).send(newCard);
   } catch (error) {
@@ -59,6 +53,9 @@ export const deleteCard = async (
     );
     return res.status(200).send(deletedCard);
   } catch (error) {
+    if (error instanceof Error && error.name === "CastError") {
+      return next(new BadRequestError("Невалидный id"));
+    }
     return next(error);
   }
 };
@@ -76,9 +73,14 @@ export const likeCard = async (
       Object(cardId),
       { $addToSet: { likes: { _id: Object(_id) } } }, // добавить _id в массив, если его там нет
       { new: true }
-    ).orFail(() => new NotFoundError("Карта не найдена"));
+    )
+      .populate(["owner", "likes"])
+      .orFail(() => new NotFoundError("Карта не найдена"));
     return res.status(200).send(likedCard);
   } catch (error) {
+    if (error instanceof Error && error.name === "CastError") {
+      return next(new BadRequestError("Невалидный id"));
+    }
     return next(error);
   }
 };
@@ -99,6 +101,9 @@ export const dislikeCard = async (
     ).orFail(() => new NotFoundError("Карта не найдена"));
     return res.status(200).send(dislikedCard);
   } catch (error) {
+    if (error instanceof Error && error.name === "CastError") {
+      return next(new BadRequestError("Невалидный id"));
+    }
     return next(error);
   }
 };
