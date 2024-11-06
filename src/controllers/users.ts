@@ -6,6 +6,7 @@ import NotFoundError from "../errors/notFoundError";
 import ConflictError from "../errors/conflictError";
 import BadRequestError from "../errors/badRequestError";
 import { AuthContext } from "../types/authContext";
+// http://localhost:3000/users
 
 export const getUsers = async (_req: Request, res: Response, next: NextFunction) => {
   console.log("getUsers!!!!!");
@@ -59,15 +60,15 @@ export const updateUserData = async (
 ) => {
   const { name, about } = req.body;
   console.log(name, about, "updateUserData!!!!!!");
-  const { _id } = res.locals.user;
+  // const { _id } = res.locals.user;
+  const { _id } = req.user;
   try {
     const updateUser = await User.findOneAndUpdate(
       { _id: Object(_id) },
       { $set: { name, about } },
       {
         returnDocument: "after",
-        runValidators: true,
-        runSettersOnQuery: true
+        runValidators: true
       }
     ).orFail(() => new NotFoundError("Пользователь не найден"));
     return res.status(200).send(updateUser);
@@ -86,12 +87,13 @@ export const updateAvatar = async (
 ) => {
   const { avatar } = req.body;
   console.log(avatar, "updateAvatar!!!!!!");
-  const { _id } = res.locals.user;
+  // const { _id } = res.locals.user;
+  const { _id } = req.user;
   try {
     const updateUserAvatar = await User.findOneAndUpdate(
       { _id: Object(_id) },
       { $set: { avatar } },
-      { returnDocument: "after", runValidators: true, context: "query" }
+      { returnDocument: "after", runValidators: true }
     ).orFail(() => new NotFoundError("Пользователь не найден"));
     return res.status(200).send(updateUserAvatar);
   } catch (error) {

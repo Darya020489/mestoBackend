@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
 import router from "./routes";
 import errorHandler from "./middleware/error-handler";
-import { AuthContext } from "./types/authContext";
+// import { AuthContext } from "./types/authContext";
 
 const { PORT = 3000, MONGO_URL = "mongodb://0.0.0.0:27017/mestodb" } = process.env;
 
@@ -13,9 +13,15 @@ app.use(express.urlencoded({ extended: true }));
 
 mongoose.connect(MONGO_URL);
 
-const addUserId = (_req: Request, res: Response<unknown, AuthContext>, next: NextFunction) => {
-  res.locals.user = {
-    _id: "672391369b8db7cd3768056d" // _id созданного пользователя
+// const addUserId = (_req: Request, res: Response<unknown, AuthContext>, next: NextFunction) => {
+//   res.locals.user = {
+//     _id: "672391369b8db7cd3768056d" // _id созданного пользователя
+//   };
+//   next();
+// };
+const addUserId = (req: Request, _res: Response, next: NextFunction) => {
+  req.user = {
+    _id: "672391369b8db7cd3768056d"
   };
   next();
 };

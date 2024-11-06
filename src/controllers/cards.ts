@@ -21,7 +21,8 @@ export const createCard = async (
   res: Response<unknown, AuthContext>,
   next: NextFunction
 ) => {
-  const { _id } = res.locals.user;
+  // const { _id } = res.locals.user;
+  const { _id } = req.user;
   console.log(_id);
   const { name, link } = req.body;
   console.log(name, link, "createCard!!!!!");
@@ -66,7 +67,8 @@ export const likeCard = async (
   next: NextFunction
 ) => {
   const { cardId } = req.params;
-  const { _id } = res.locals.user;
+  // const { _id } = res.locals.user;
+  const { _id } = req.user;
   console.log(cardId, "likeCard!!!!!");
   try {
     const likedCard = await Card.findByIdAndUpdate(
@@ -91,7 +93,9 @@ export const dislikeCard = async (
   next: NextFunction
 ) => {
   const { cardId } = req.params;
-  const { _id } = res.locals.user;
+  // const { _id } = res.locals.user;
+  const { _id } = req.user;
+  console.log(_id, "_id!!!!!");
   console.log(cardId, "dislikeCard!!!!!");
   try {
     const dislikedCard = await Card.findByIdAndUpdate(
