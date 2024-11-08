@@ -20,7 +20,8 @@
                 "extensions": [
                     ".ts",
                     ".js",
-                    ".json"
+                    ".json",
+                    ".d.ts"
                 ]
             }
         },

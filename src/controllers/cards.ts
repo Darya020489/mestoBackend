@@ -4,6 +4,7 @@ import { Error as MongooseError } from "mongoose";
 import Card from "../models/card";
 import NotFoundError from "../errors/notFoundError";
 import BadRequestError from "../errors/badRequestError";
+import ForbiddenError from "../errors/forbiddenError";
 import { AuthContext } from "../types/authContext";
 
 export const getCards = async (_req: Request, res: Response, next: NextFunction) => {
@@ -21,16 +22,15 @@ export const createCard = async (
   res: Response<unknown, AuthContext>,
   next: NextFunction
 ) => {
-  // const { _id } = res.locals.user;
-  const { _id } = req.user;
-  console.log(_id);
+  const userId = req.user?._id;
+  console.log(userId);
   const { name, link } = req.body;
   console.log(name, link, "createCard!!!!!");
   try {
     const newCard = await Card.create({
       name,
       link,
-      owner: { _id: Object(_id) }
+      owner: { _id: Object(userId) }
     });
     return res.status(constants.HTTP_STATUS_CREATED).send(newCard);
   } catch (error) {
@@ -47,11 +47,16 @@ export const deleteCard = async (
   next: NextFunction
 ) => {
   const { cardId } = req.params;
+  const userId = req.user?._id;
   console.log(cardId, "deleteCard!!!!!");
   try {
-    const deletedCard = await Card.findOneAndDelete({ _id: Object(cardId) }).orFail(
+    const currentCard = await Card.findOne({ _id: Object(cardId) }).orFail(
       () => new NotFoundError("Карта не найдена")
     );
+    if (userId !== currentCard.owner) {
+      return next(new ForbiddenError("Запрещено удалять чужую карту"));
+    }
+    const deletedCard = await Card.findOneAndDelete({ _id: Object(cardId) });
     return res.status(200).send(deletedCard);
   } catch (error) {
     if (error instanceof Error && error.name === "CastError") {
@@ -67,13 +72,12 @@ export const likeCard = async (
   next: NextFunction
 ) => {
   const { cardId } = req.params;
-  // const { _id } = res.locals.user;
-  const { _id } = req.user;
+  const userId = req.user?._id;
   console.log(cardId, "likeCard!!!!!");
   try {
     const likedCard = await Card.findByIdAndUpdate(
       Object(cardId),
-      { $addToSet: { likes: { _id: Object(_id) } } }, // добавить _id в массив, если его там нет
+      { $addToSet: { likes: { _id: Object(userId) } } }, // добавить _id в массив, если его там нет
       { new: true }
     )
       .populate(["owner", "likes"])
@@ -93,16 +97,16 @@ export const dislikeCard = async (
   next: NextFunction
 ) => {
   const { cardId } = req.params;
-  // const { _id } = res.locals.user;
-  const { _id } = req.user;
-  console.log(_id, "_id!!!!!");
+  const userId = req.user?._id;
   console.log(cardId, "dislikeCard!!!!!");
   try {
     const dislikedCard = await Card.findByIdAndUpdate(
       Object(cardId),
-      { $pull: { likes: Object(_id) } }, // убрать _id из массива
+      { $pull: { likes: Object(userId) } }, // убрать _id из массива
       { new: true }
-    ).orFail(() => new NotFoundError("Карта не найдена"));
+    )
+      .populate(["owner", "likes"])
+      .orFail(() => new NotFoundError("Карта не найдена"));
     return res.status(200).send(dislikedCard);
   } catch (error) {
     if (error instanceof Error && error.name === "CastError") {

@@ -8,7 +8,7 @@ const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     statusCode === constants.HTTP_STATUS_INTERNAL_SERVER_ERROR
       ? "На сервере произошла ошибка"
       : err.message;
-
+  console.log("errorHandler!!!!!");
   res.status(statusCode).send({ message });
 };
 

@@ -9,7 +9,8 @@ router.use("/users", userRouter);
 router.use("/cards", cardRouter);
 // eslint-disable-next-line no-unused-vars
 router.use("/", (_req: Request, _res: Response, _next: NextFunction) => {
-  throw new NotFoundError("Route не найден");
+  console.log("no route");
+  throw new NotFoundError("Запрашиваемый ресурс не найден");
 });
 
 export default router;
