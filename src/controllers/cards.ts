@@ -4,8 +4,8 @@ import { Error as MongooseError } from "mongoose";
 import Card from "../models/card";
 import NotFoundError from "../errors/notFoundError";
 import BadRequestError from "../errors/badRequestError";
-import ForbiddenError from "../errors/forbiddenError";
 import { AuthContext } from "../types/authContext";
+import ForbiddenError from "../errors/forbiddenError";
 
 export const getCards = async (_req: Request, res: Response, next: NextFunction) => {
   console.log("getCards!!!!!");
@@ -22,10 +22,10 @@ export const createCard = async (
   res: Response<unknown, AuthContext>,
   next: NextFunction
 ) => {
-  const userId = req.user?._id;
+  const userId = res.locals.user?._id;
   console.log(userId);
   const { name, link } = req.body;
-  console.log(name, link, "createCard!!!!!");
+  console.log(name, link, "createCard!!!!");
   try {
     const newCard = await Card.create({
       name,
@@ -46,14 +46,14 @@ export const deleteCard = async (
   res: Response<unknown, AuthContext>,
   next: NextFunction
 ) => {
+  const userId = res.locals.user?._id;
   const { cardId } = req.params;
-  const userId = req.user?._id;
-  console.log(cardId, "deleteCard!!!!!");
+  console.log(userId, cardId, "deleteCard!!!!!");
   try {
     const currentCard = await Card.findOne({ _id: Object(cardId) }).orFail(
       () => new NotFoundError("Карта не найдена")
     );
-    if (userId !== currentCard.owner) {
+    if (userId !== String(currentCard.owner)) {
       return next(new ForbiddenError("Запрещено удалять чужую карту"));
     }
     const deletedCard = await Card.findOneAndDelete({ _id: Object(cardId) });
@@ -71,8 +71,8 @@ export const likeCard = async (
   res: Response<unknown, AuthContext>,
   next: NextFunction
 ) => {
+  const userId = res.locals.user?._id;
   const { cardId } = req.params;
-  const userId = req.user?._id;
   console.log(cardId, "likeCard!!!!!");
   try {
     const likedCard = await Card.findByIdAndUpdate(
@@ -96,8 +96,8 @@ export const dislikeCard = async (
   res: Response<unknown, AuthContext>,
   next: NextFunction
 ) => {
+  const userId = res.locals.user?._id;
   const { cardId } = req.params;
-  const userId = req.user?._id;
   console.log(cardId, "dislikeCard!!!!!");
   try {
     const dislikedCard = await Card.findByIdAndUpdate(

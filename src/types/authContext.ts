@@ -1,5 +1,5 @@
+import { JwtPayload } from "jsonwebtoken";
+
 export type AuthContext = {
-  user: {
-    _id: string;
-  };
+  user: JwtPayload | null;
 };

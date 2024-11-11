@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 import { constants } from "http2";
-import bcrypt from "bcryptjs";
 import { Error as MongooseError } from "mongoose";
 import jwt from "jsonwebtoken";
 import User from "../models/user";
@@ -11,7 +10,10 @@ import { AuthContext } from "../types/authContext";
 import "dotenv/config";
 // http://localhost:3000/users
 
-const { NODE_ENV, JWT_SECRET } = process.env;
+const {
+  NODE_ENV = "production",
+  JWT_SECRET = "eb28135ebcfc17578f96d4d65b6c7871f2c803be4180c165061d5c2db621c51b"
+} = process.env;
 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body;
@@ -23,23 +25,22 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       NODE_ENV === "production" ? (JWT_SECRET as string) : "dev-secret-key", // секретный ключ, которым этот токен был подписан
       { expiresIn: "7d" } // токен будет просрочен через 7 дней после создания
     );
-    res.cookie("jwt", token, { maxAge: 3600000 * 24 * 7, httpOnly: true, sameSite: true }).end();
+    // res.cookie("jwt", token, { maxAge: 3600000 * 24 * 7, httpOnly: true, sameSite: true }).end();
+    res.setHeader("Set-Cookie", `${token}; HttpOnly`);
+    res.send({ token });
   } catch (error) {
     next(error);
   }
 };
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
-  const { password } = req.body;
   console.log(req.body, "createUser!!!!!");
   try {
-    const hash = await bcrypt.hash(password, 10);
-    // console.log(hash, "hash");
     const newUser = await User.create({
-      ...req.body,
-      password: hash
+      ...req.body
     });
-    return res.status(constants.HTTP_STATUS_CREATED).send(newUser);
+    const cleanUser = newUser.toJSON();
+    return res.status(constants.HTTP_STATUS_CREATED).send(cleanUser);
   } catch (error) {
     if (error instanceof MongooseError.ValidationError) {
       return next(new BadRequestError(error.message));
@@ -78,9 +79,13 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const getUserData = async (req: Request, res: Response, next: NextFunction) => {
+export const getUserData = async (
+  _req: Request,
+  res: Response<unknown, AuthContext>,
+  next: NextFunction
+) => {
   try {
-    const userId = req.user?._id;
+    const userId = res.locals.user?._id;
     console.log(userId, "getUserData!!!!!");
     const user = await User.findOne({ _id: Object(userId) }).orFail(
       () => new NotFoundError("Пользователь не найден")
@@ -99,20 +104,12 @@ export const updateUserData = async (
   res: Response<unknown, AuthContext>,
   next: NextFunction
 ) => {
-  // const { _id } = res.locals.user;
-  const userId = req.user?._id;
-  let { password } = req.body;
+  const userId = res.locals.user?._id;
   console.log(userId, req.body, "updateUserData!!!!!!");
   try {
-    let newData = req.body;
-    if (password) {
-      password = await bcrypt.hash(password, 10);
-      console.log(password, "password!!!!!!!!!!!!!!!!!!!!!!!");
-      newData = { ...req.body, password };
-    }
     const updateUser = await User.findOneAndUpdate(
       { _id: Object(userId) },
-      { $set: newData },
+      { $set: req.body },
       {
         returnDocument: "after",
         runValidators: true
@@ -132,7 +129,7 @@ export const updateAvatar = async (
   res: Response<unknown, AuthContext>,
   next: NextFunction
 ) => {
-  const userId = req.user?._id;
+  const userId = res.locals.user?._id;
   const { avatar } = req.body;
   console.log(userId, avatar, "updateAvatar!!!!!!");
   try {

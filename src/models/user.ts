@@ -1,10 +1,7 @@
-import mongoose, { Document } from "mongoose";
+import mongoose, { Document, HydratedDocument } from "mongoose";
 import validator from "validator";
 import bcrypt from "bcryptjs";
 import UnauthorizedError from "../errors/unauthorizedError";
-
-export const urlPattern =
-  "/^(https?|ftp)://(([a-zd]([a-zd-]*[a-zd])?.)+[a-z]{2,}|localhost)(/[-a-zd%_.~+]*)*(?[;&a-zd%_.~+=-]*)?(#[-a-zd_]*)?$/i";
 
 export interface IUser extends Document {
   name: string;
@@ -13,15 +10,20 @@ export interface IUser extends Document {
   email: string;
   password: string;
 }
+interface IUserMethods {
+  // generateToken(): string;
+  toJSON(): string;
+}
 
-interface UserModel extends mongoose.Model<IUser> {
+interface IUserModel extends mongoose.Model<IUser, {}, IUserMethods> {
   findUserByCredentials: (
     email: string,
     password: string
-  ) => Promise<mongoose.Document<unknown, any, IUser>>;
+    // ) => Promise<mongoose.Document<unknown, any, IUser>>;
+  ) => Promise<HydratedDocument<IUser, IUserMethods>>;
 }
 
-const userSchema = new mongoose.Schema<IUser>(
+const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
   {
     name: {
       type: String,
@@ -39,8 +41,7 @@ const userSchema = new mongoose.Schema<IUser>(
       type: String,
       default: "https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png",
       validate: {
-        // validator: (v: string) => validator.isURL(v, { require_protocol: true }),
-        validator: (v: string) => validator.matches(v, urlPattern),
+        validator: (v: string) => validator.isURL(v, { require_protocol: true }),
         message: "Поле 'avatar' должно быть валидным url-адресом"
       }
     },
@@ -61,9 +62,41 @@ const userSchema = new mongoose.Schema<IUser>(
   },
   {
     versionKey: false,
-    timestamps: true
+    timestamps: true,
+    // удаление пароля в контроллере создания
+    toJSON: {
+      virtuals: true,
+      transform: (_doc, ret) => {
+        // eslint-disable-next-line no-param-reassign
+        delete ret.password;
+        return ret;
+      }
+    }
   }
 );
+
+// добавление хеша в контроллере регистрации
+userSchema.pre("save", async function hashingPassword(next) {
+  try {
+    if (this.isModified("password")) {
+      console.log("password hashing!!!!!!!!");
+      this.password = await bcrypt.hash(this.password, 10);
+    }
+    next();
+  } catch (error) {
+    next(error as Error);
+  }
+});
+
+// генерация токена
+// userSchema.methods.generateToken = function generateToken() {
+//   const token = jwt.sign(
+//     { _id: this._id }, // Пейлоуд токена — зашифрованный в строку объект пользователя
+//     NODE_ENV === "production" ? (JWT_SECRET as string) : "dev-secret-key",
+//     { expiresIn: "7d" } // токен будет просрочен через 7 дней после создания
+//   );
+//   return token;
+// };
 
 userSchema.static(
   "findUserByCredentials",
@@ -82,4 +115,4 @@ userSchema.static(
   }
 );
 
-export default mongoose.model<IUser, UserModel>("User", userSchema);
+export default mongoose.model<IUser, IUserModel>("User", userSchema);
