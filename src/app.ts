@@ -22,7 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(requestLogger); // подключаем логер запросов
 
-app.post("/signin", login);
+app.post("/signin", validateBody, login);
 app.post("/signup", validateBody, createUser);
 
 app.use(auth);

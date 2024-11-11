@@ -1,5 +1,6 @@
 import { model, Schema } from "mongoose";
 import validator from "validator";
+import { urlPattern } from "../patterns/patterns";
 
 interface ICard {
   name: string;
@@ -21,8 +22,8 @@ const cardSchema = new Schema<ICard>(
       type: String,
       required: [true, "Поле 'link' не может быть пустым"],
       validate: {
-        // validator: (v: string) => validator.matches(v, urlPattern),
-        validator: (v: string) => validator.isURL(v, { require_protocol: true }),
+        validator: (v: string) => validator.matches(v, urlPattern),
+        // validator: (v: string) => validator.isURL(v, { require_protocol: true }),
         message: "Поле 'avatar' должно быть валидным url-адресом"
       }
     },

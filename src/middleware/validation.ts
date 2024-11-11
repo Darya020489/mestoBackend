@@ -123,9 +123,10 @@ const validateBodyNameLink = celebrate({
 export const validateBody = (req: Request, res: Response, next: NextFunction) => {
   const url = req.originalUrl;
   console.log(url, "url!!!!!!!!!!!!");
+  if (url === "/signup" || url === "/signin") {
+    return validateBodyEmailPassw(req, res, next);
+  }
   switch (url) {
-    case "/signup":
-      return validateBodyEmailPassw(req, res, next);
     case "/users/me":
       return validateBodyNameAbout(req, res, next);
     case "/users/me/avatar":
