@@ -1,5 +1,6 @@
 import express from "express";
 import mongoose from "mongoose";
+import cors from "cors";
 import cookieParser from "cookie-parser";
 import { errors } from "celebrate";
 import router from "./routes";
@@ -16,6 +17,7 @@ const app = express();
 
 mongoose.connect(MONGO_URL);
 
+app.use(cors());
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

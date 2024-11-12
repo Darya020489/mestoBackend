@@ -25,7 +25,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       NODE_ENV === "production" ? (JWT_SECRET as string) : "dev-secret-key", // секретный ключ, которым этот токен был подписан
       { expiresIn: "7d" } // токен будет просрочен через 7 дней после создания
     );
-    res.cookie("jwt", token, {
+    res.cookie("token", token, {
       maxAge: 3600000 * 24 * 7,
       httpOnly: true,
       secure: NODE_ENV === "production",

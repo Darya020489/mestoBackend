@@ -23,7 +23,7 @@ export const createCard = async (
   next: NextFunction
 ) => {
   const userId = res.locals.user?._id;
-  console.log(userId);
+  // console.log(userId);
   const { name, link } = req.body;
   console.log(name, link, "createCard!!!!");
   try {
@@ -80,7 +80,7 @@ export const likeCard = async (
       { $addToSet: { likes: { _id: Object(userId) } } }, // добавить _id в массив, если его там нет
       { new: true }
     )
-      .populate(["owner", "likes"])
+      // .populate(["owner", "likes"])
       .orFail(() => new NotFoundError("Карта не найдена"));
     return res.status(200).send(likedCard);
   } catch (error) {
@@ -105,7 +105,7 @@ export const dislikeCard = async (
       { $pull: { likes: Object(userId) } }, // убрать _id из массива
       { new: true }
     )
-      .populate(["owner", "likes"])
+      // .populate(["owner", "likes"])
       .orFail(() => new NotFoundError("Карта не найдена"));
     return res.status(200).send(dislikedCard);
   } catch (error) {
